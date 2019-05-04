@@ -1,0 +1,34 @@
+{
+    "@everyone": {
+        "id": 422320295454441472,
+        "position": 0
+    },
+    "new role": {
+        "id": 568889540304175135,
+        "position": 1
+    },
+    "Horse": {
+        "id": 568661062115917825,
+        "position": 2
+    },
+    "momo": {
+        "id": 568574147513548860,
+        "position": 3
+    },
+    "TacoBot": {
+        "id": 476821632879558667,
+        "position": 4
+    },
+    "TempoBot": {
+        "id": 476816663539351562,
+        "position": 5
+    },
+    "YAGPDB.xyz": {
+        "id": 573943279616524290,
+        "position": 6
+    },
+    "Bots": {
+        "id": 422320625831378944,
+        "position": 7
+    }
+}

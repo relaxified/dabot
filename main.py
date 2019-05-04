@@ -16,7 +16,7 @@ class Bot(discord.Client):
         super().__init__()
         self.EMOJI = dict()
         self.activity = discord.Activity(name='pepega', url='https://www.twitch.tv/relaxified', type=3)
-        self.bg_task = self.loop.create_task(self._is_live())
+        self.bg_task = None
         print(discord.utils.oauth_url(client_id='421387430017368074', permissions=discord.Permissions(1580727376)))
         webhook_url = "https://discordapp.com/api/oauth2/authorize?client_id=421387430017368074" \
                       "&state=00100&redirect_uri=http%3A%2F%2Fgg.relaxified.com%2Factivate%2F" \
@@ -25,41 +25,55 @@ class Bot(discord.Client):
 
     async def _is_live(self):
         """Retrieves stream info from https://api.twitch.tv/"""
-        api_endpoint = 'https://api.twitch.tv/helix/'
-        streamers = ['moonmoon_ow', 'shroud', 'chocotaco', 'sodapoppin', 'ninja', 'DizzyKitten', 'DrDisrespect',
-                     'xchocobars', 'lethalfrag']
         headers = {'Client-ID': os.environ['twitch']}
-        streamer_url = api_endpoint + "streams?user_login="
-        user_url = api_endpoint + "users?login="
-        for stream in streamers:
-            if stream == streamers[0]:
-                streamer_url += stream
-                user_url += stream
-            else:
-                streamer_url += f"&user_login={stream}"
-                user_url += f"&login={stream}"
         while True:
+            api_endpoint = 'https://api.twitch.tv/helix/'
+            streamer_url = api_endpoint + "streams?user_login="
+            user_url = api_endpoint + "users?login="
+            game_url = api_endpoint + "games?id="
+            with open(f'twitch/streams.json', 'r') as f:
+                streams = json.load(f)
+            for stream in streams['streams']:
+                if stream == streams['streams'][0]:
+                    streamer_url += stream
+                    user_url += stream
+                else:
+                    streamer_url += f"&user_login={stream}"
+                    user_url += f"&login={stream}"
             async with aiohttp.ClientSession(headers=headers) as session:
                 async with session.get(streamer_url) as r:
-                    body = await r.json()
-                    async with session.get(user_url) as u:
-                        user = await u.json()
-                    with open(f'twitch/user.json', 'w') as f:
-                        json.dump(user, f, indent=4)
-                    with open(f'twitch/live_status.json', 'w') as f:
-                        json.dump(body, f, indent=4)
-                    if body['data']:
-                        game_url = api_endpoint + "games?id="
-                        for i in body['data']:
-                            if i == body['data'][0]:
-                                game_url += i['game_id']
-                            else:
-                                game_url += f"&id={i['game_id']}"
-                        async with session.get(game_url) as g:
-                            game_info = await g.json()
-                            with open(f'twitch/game_info.json', 'w') as f:
-                                json.dump(game_info, f, indent=4)
+                    stream_info = await r.json()
+                async with session.get(user_url) as u:
+                    user_info = await u.json()
+                with open(f'twitch/user.json', 'w') as f:
+                    json.dump(user_info, f, indent=4)
+                with open(f'twitch/live_status.json', 'w') as f:
+                    json.dump(stream_info, f, indent=4)
+                if stream_info['data']:
+                    for game_id in stream_info['data']:
+                        if game_id == stream_info['data'][0]:
+                            game_url += game_id['game_id']
+                        else:
+                            game_url += f"&id={game_id['game_id']}"
+                async with session.get(game_url) as g:
+                    game_info = await g.json()
                 await session.close()
+                try:
+                    with open(f'twitch/game_info.json', 'r') as k:
+                        game = json.load(k)
+                except FileNotFoundError:
+                    with open(f'twitch/game_info.json', 'w') as k:
+                        json.dump(game_info, k, indent=4)
+                finally:
+                    with open(f'twitch/game_info.json', 'r') as k:
+                        game = json.load(k)
+                if game_info['data']:
+                    for data in game_info['data']:
+                        if data not in game['data']:
+                            game['data'].append(data)
+                    with open('twitch/game_info.json', 'w') as k:
+                        json.dump(game, k, indent=4)
+            await self._embed()
             await asyncio.sleep(60)
 
     @staticmethod
@@ -70,7 +84,6 @@ class Bot(discord.Client):
         box_art = "https://static-cdn.jtvnw.net/ttv-static/404_boxart-188x250.jpg"
         game_name = "?"
         icon_url = ""
-        started = dict()
         with open(f'twitch/live_status.json', 'r') as k:
             live_status = json.load(k)
         with open(f'twitch/user.json', 'r') as u:
@@ -79,49 +92,48 @@ class Bot(discord.Client):
             game_info = json.load(g)
         with open(f'twitch/started_at.json', 'r') as s:
             started_at = json.load(s)
-            started.update(started_at)
         if not live_status['data']:
             return
         for stream in live_status['data']:
-            for game in game_info['data']:
-                if stream['game_id'] == game['id']:
-                    box_art = game['box_art_url'].replace("{width}x{height}", "188x250")
-                    game_name = game['name']
-            for user in user_info['data']:
-                if stream['user_id'] == user['id']:
-                    icon_url = user['profile_image_url']
-            embeds = {'embeds': []}
-            embed = {
-                "color": 6570405,
-                "author": {
-                    "name": f"{stream['user_name']} went live!",
-                    "url": f"https://www.twitch.tv/{stream['user_name']}",
-                    "icon_url": icon_url
-                },
-                "title": stream['title'],
-                "description": f"[Watch live on Twitch!](https://www.twitch.tv/{stream['user_name']})",
-                "fields": [
-                    {
-                        "name": "Playing",
-                        "value": game_name,
-                        "inline": True
-                    },
-                    {
-                        "name": "Viewers",
-                        "value": stream['viewer_count'],
-                        "inline": True
-                    }
-                ],
-                "thumbnail": {
-                    "url": box_art
-                },
-                "image": {
-                    "url": stream['thumbnail_url'].replace("{width}x{height}", "1920x1080")
-                }
-            }
-            embeds['embeds'].append(embed)
-            if stream['user_name'] not in started_at or\
+            if stream['user_name'] not in started_at or \
                     stream['started_at'] != started_at[stream['user_name']]['started_at']:
+                for game in game_info['data']:
+                    if stream['game_id'] == game['id']:
+                        box_art = game['box_art_url'].replace("{width}x{height}", "188x250")
+                        game_name = game['name']
+                for user in user_info['data']:
+                    if stream['user_id'] == user['id']:
+                        icon_url = user['profile_image_url']
+                embeds = {'embeds': []}
+                embed = {
+                    "color": 6570405,
+                    "author": {
+                        "name": f"{stream['user_name']} went live!",
+                        "url": f"https://www.twitch.tv/{stream['user_name']}",
+                        "icon_url": icon_url
+                    },
+                    "title": stream['title'],
+                    "description": f"[Watch live on Twitch!](https://www.twitch.tv/{stream['user_name']})",
+                    "fields": [
+                        {
+                            "name": "Playing",
+                            "value": game_name,
+                            "inline": True
+                        },
+                        {
+                            "name": "Viewers",
+                            "value": stream['viewer_count'],
+                            "inline": True
+                        }
+                    ],
+                    "thumbnail": {
+                        "url": box_art
+                    },
+                    "image": {
+                        "url": stream['thumbnail_url'].replace("{width}x{height}", "1920x1080")
+                    }
+                }
+                embeds['embeds'].append(embed)
                 async with aiohttp.ClientSession(headers=header) as session:
                     for hook in webhooks:
                         url = f"{api_endpoint}{hook[0]}/{hook[1]}"
@@ -134,9 +146,9 @@ class Bot(discord.Client):
                             except json.JSONDecodeError as e:
                                 pass
                     await session.close()
-                started.update({stream['user_name']: {'started_at': stream['started_at']}})
-                with open('twitch/started_at.json', 'w') as s:
-                    json.dump(started, s, indent=4)
+                    started_at.update({stream['user_name']: {'started_at': stream['started_at']}})
+                    with open('twitch/started_at.json', 'w') as s:
+                        json.dump(started_at, s, indent=4)
 
     async def _react(self, message):
         """Reacts to a designated message with [emoji id].
@@ -179,22 +191,35 @@ class Bot(discord.Client):
         if len(msg) < 3:
             return
         if "title" in msg:
-            activity.name = msg[2]
+            self.activity.name = msg[2]
         if "url" in msg:
-            activity.url = msg[2]
+            self.activity.url = msg[2]
         if "type" in msg:
             if msg[2].lower() == "playing" or msg[2] == "0":
-                active_type = discord.ActivityType.playing
+                self.activity.type = discord.ActivityType.playing
             elif msg[2].lower() == "streaming" or msg[2] == "1":
-                active_type = discord.ActivityType.streaming
+                self.activity.type = discord.ActivityType.streaming
             elif msg[2].lower() == "listening" or msg[2] == "2":
-                active_type = discord.ActivityType.listening
+                self.activity.type = discord.ActivityType.listening
             elif msg[2].lower() == "watching" or msg[2] == "3":
-                active_type = discord.ActivityType.watching
+                self.activity.type = discord.ActivityType.watching
             else:
-                active_type = discord.ActivityType.unknown
-            activity.type = active_type
-        await self.change_presence(activity=activity)
+                self.activity.type = discord.ActivityType.unknown
+        # await self.change_presence(activity=activity)
+
+    @staticmethod
+    async def _update_streams(message):
+        msg = message.content.split()
+        with open('twitch/streams.json', 'r') as f:
+            streams = json.load(f)
+        if msg[1] == "add":
+            streams['streams'].append(msg[2])
+        elif msg[1] == "remove" and msg[2] in streams['streams']:
+            streams['streams'].remove(msg[2])
+        elif msg[1] == "list":
+            await message.channel.send(streams['streams'])
+        with open('twitch/streams.json', 'w') as f:
+            json.dump(streams, f, indent=4)
 
     async def on_ready(self):
         print(f"Logged in as: {self.user}")
@@ -206,6 +231,8 @@ class Bot(discord.Client):
         for i in self.emojis:
             self.EMOJI[i.name] = i.id
         print("Listening for commands...")
+        print("Starting loop")
+        self.bg_task = self.loop.create_task(self._is_live())
 
     async def on_message(self, message):
         now = datetime.datetime.now()
@@ -227,6 +254,17 @@ class Bot(discord.Client):
 
         if message.author.id not in [49291953782657024, 421387430017368074]:
             return
+
+        if message.content.startswith("--streams"):
+            await self._update_streams(message)
+
+        if message.content.startswith("--dumproles"):
+            roles = dict()
+            for role in message.guild.roles:
+                roles[role.name] = {'id': role.id, 'position': role.position}
+            with open(f'roles.json', 'w') as f:
+                json.dump(roles, f, indent=4)
+            await message.delete()
 
         if message.content.startswith("--embed"):
             await self._embed()
