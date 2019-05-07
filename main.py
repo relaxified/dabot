@@ -6,19 +6,20 @@ import discord
 import json
 import logging
 import os
+import random
 
-LOG = logging.getLogger("log")
-LOG.info("Testing.")
+CLIENT_ID = os.environ['CLIENT_ID']
+CLIENT_SECRET = os.environ['CLIENT_SECRET']
 
 
 class Bot(discord.Client):
     def __init__(self):
         super().__init__()
         self.EMOJI = dict()
-        self.activity = discord.Activity(name='pepega', url='https://www.twitch.tv/relaxified', type=3)
+        self.activity = discord.Activity(name='pepega', type=3)
         self.bg_task = None
-        print(discord.utils.oauth_url(client_id='421387430017368074', permissions=discord.Permissions(1580727376)))
-        webhook_url = "https://discordapp.com/api/oauth2/authorize?client_id=421387430017368074" \
+        print(discord.utils.oauth_url(client_id=CLIENT_ID, permissions=discord.Permissions(1580727376)))
+        webhook_url = f"https://discordapp.com/api/oauth2/authorize?client_id={CLIENT_ID}" \
                       "&state=00100&redirect_uri=http%3A%2F%2Fgg.relaxified.com%2Factivate%2F" \
                       "&response_type=code&scope=webhook.incoming"
         print(webhook_url)
@@ -104,6 +105,7 @@ class Bot(discord.Client):
                 for user in user_info['data']:
                     if stream['user_id'] == user['id']:
                         icon_url = user['profile_image_url']
+                image = stream['thumbnail_url'].replace('{width}x{height}', '1920x1080')
                 embeds = {'embeds': []}
                 embed = {
                     "color": 6570405,
@@ -130,7 +132,7 @@ class Bot(discord.Client):
                         "url": box_art
                     },
                     "image": {
-                        "url": stream['thumbnail_url'].replace("{width}x{height}", "1920x1080")
+                        "url": f"{image}?t={random.randint(0, 999999999)}"
                     }
                 }
                 embeds['embeds'].append(embed)

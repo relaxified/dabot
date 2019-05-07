@@ -19,6 +19,21 @@
             "id": "504734",
             "name": "Rico",
             "box_art_url": "https://static-cdn.jtvnw.net/ttv-boxart/Rico-{width}x{height}.jpg"
+        },
+        {
+            "id": "33214",
+            "name": "Fortnite",
+            "box_art_url": "https://static-cdn.jtvnw.net/ttv-boxart/Fortnite-{width}x{height}.jpg"
+        },
+        {
+            "id": "498859",
+            "name": "Mordhau",
+            "box_art_url": "https://static-cdn.jtvnw.net/ttv-boxart/Mordhau-{width}x{height}.jpg"
+        },
+        {
+            "id": "24241",
+            "name": "FINAL FANTASY XIV Online",
+            "box_art_url": "https://static-cdn.jtvnw.net/ttv-boxart/FINAL%20FANTASY%20XIV%20Online-{width}x{height}.jpg"
         }
     ]
 }

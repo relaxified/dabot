@@ -1,4 +1,25 @@
 {
-    "data": [],
-    "pagination": {}
+    "data": [
+        {
+            "id": "34018164672",
+            "user_id": "76579174",
+            "user_name": "CursedwithLazy",
+            "game_id": "24241",
+            "community_ids": [],
+            "type": "live",
+            "title": "Making a noose out of your hollow crown",
+            "viewer_count": 3,
+            "started_at": "2019-05-07T01:05:30Z",
+            "language": "en",
+            "thumbnail_url": "https://static-cdn.jtvnw.net/previews-ttv/live_user_cursedwithlazy-{width}x{height}.jpg",
+            "tag_ids": [
+                "ab45fcb7-a22d-4a07-b0ac-fb3940566fa7",
+                "aeab850d-94ec-4af5-89a0-9eb1bf41558d",
+                "6ea6bca4-4712-4ab9-a906-e3336a9d8039"
+            ]
+        }
+    ],
+    "pagination": {
+        "cursor": "eyJiIjpudWxsLCJhIjp7Ik9mZnNldCI6MX19"
+    }
 }
