@@ -25,7 +25,8 @@ class Bot(discord.Client):
         print(webhook_url)
 
     async def _is_live(self):
-        """Retrieves stream info from https://api.twitch.tv/"""
+        """Retrieves stream info from https://api.twitch.tv/
+         and saves the information to file in json format."""
         headers = {'Client-ID': os.environ['twitch']}
         while True:
             api_endpoint = 'https://api.twitch.tv/helix/'
@@ -42,38 +43,28 @@ class Bot(discord.Client):
                     streamer_url += f"&user_login={stream}"
                     user_url += f"&login={stream}"
             async with aiohttp.ClientSession(headers=headers) as session:
+                print("Fetching stream info...")
                 async with session.get(streamer_url) as r:
                     stream_info = await r.json()
                 async with session.get(user_url) as u:
                     user_info = await u.json()
-                with open(f'twitch/user.json', 'w') as f:
-                    json.dump(user_info, f, indent=4)
-                with open(f'twitch/live_status.json', 'w') as f:
-                    json.dump(stream_info, f, indent=4)
                 if stream_info['data']:
                     for game_id in stream_info['data']:
-                        if game_id == stream_info['data'][0]:
+                        if game_id['game_id'] in game_url:
+                            pass
+                        elif game_id == stream_info['data'][0]:
                             game_url += game_id['game_id']
                         else:
                             game_url += f"&id={game_id['game_id']}"
                 async with session.get(game_url) as g:
                     game_info = await g.json()
                 await session.close()
-                try:
-                    with open(f'twitch/game_info.json', 'r') as k:
-                        game = json.load(k)
-                except FileNotFoundError:
-                    with open(f'twitch/game_info.json', 'w') as k:
-                        json.dump(game_info, k, indent=4)
-                finally:
-                    with open(f'twitch/game_info.json', 'r') as k:
-                        game = json.load(k)
-                if game_info['data']:
-                    for data in game_info['data']:
-                        if data not in game['data']:
-                            game['data'].append(data)
-                    with open('twitch/game_info.json', 'w') as k:
-                        json.dump(game, k, indent=4)
+                with open('twitch/user.json', 'w') as f:
+                    json.dump(user_info, f, indent=4)
+                with open('twitch/live_status.json', 'w') as f:
+                    json.dump(stream_info, f, indent=4)
+                with open('twitch/game_info.json', 'w') as f:
+                    json.dump(game_info, f, indent=4)
             await self._embed()
             await asyncio.sleep(60)
 
@@ -233,7 +224,6 @@ class Bot(discord.Client):
         for i in self.emojis:
             self.EMOJI[i.name] = i.id
         print("Listening for commands...")
-        print("Starting loop")
         self.bg_task = self.loop.create_task(self._is_live())
 
     async def on_message(self, message):
