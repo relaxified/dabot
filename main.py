@@ -87,7 +87,7 @@ class Bot(discord.Client):
         if not live_status['data']:
             return
         for stream in live_status['data']:
-            if stream['user_name'] not in started_at or \
+            if stream['user_name'] not in started_at or stream['user_name'] is not "" or \
                     stream['started_at'] != started_at[stream['user_name']]['started_at']:
                 for game in game_info['data']:
                     if stream['game_id'] == game['id']:
@@ -230,11 +230,6 @@ class Bot(discord.Client):
         now = datetime.datetime.now()
         timestamp = datetime.datetime.time(now)
         print(f"{timestamp}\nGuild: {message.guild} - Channel: {message.channel}\n{message.author}: {message.content}")
-
-        if message.author.id == 49291601729556480:  # Artorias (Void)
-            await message.add_reaction(self.get_emoji(self.EMOJI['praisesun']))
-        elif message.author.id == 79232736220422144:  # Mimi
-            await message.add_reaction(self.get_emoji(self.EMOJI['pepega']))
 
         if message.content.startswith("--react"):
             await self._react(message)
