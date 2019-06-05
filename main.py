@@ -18,11 +18,27 @@ class Bot(discord.Client):
         self.EMOJI = dict()
         self.activity = discord.Activity(name='pepega', type=3)
         self.bg_task = None
+        self._required_files()
         print(discord.utils.oauth_url(client_id=CLIENT_ID, permissions=discord.Permissions(1580727376)))
         webhook_url = f"https://discordapp.com/api/oauth2/authorize?client_id={CLIENT_ID}" \
                       "&state=00100&redirect_uri=http%3A%2F%2Fgg.relaxified.com%2Factivate%2F" \
                       "&response_type=code&scope=webhook.incoming"
         print(webhook_url)
+
+    @staticmethod
+    def _required_files():
+        try:
+            f = open("twitch/streams.json", "r")
+            f.close()
+        except FileNotFoundError:
+            f = open("twitch/streams.json", "w")
+            f.write('{"streams": []}')
+        try:
+            f = open("twitch/started_at.json", "r")
+            f.close()
+        except FileNotFoundError:
+            f = open("twitch/started_at.json", "w")
+            f.write('{}')
 
     async def _is_live(self):
         """Retrieves stream info from https://api.twitch.tv/
@@ -33,39 +49,47 @@ class Bot(discord.Client):
             streamer_url = api_endpoint + "streams?user_login="
             user_url = api_endpoint + "users?login="
             game_url = api_endpoint + "games?id="
-            with open(f'twitch/streams.json', 'r') as f:
-                streams = json.load(f)
-            for stream in streams['streams']:
-                if stream == streams['streams'][0]:
-                    streamer_url += stream
-                    user_url += stream
-                else:
-                    streamer_url += f"&user_login={stream}"
-                    user_url += f"&login={stream}"
-            async with aiohttp.ClientSession(headers=headers) as session:
-                print("Fetching stream info...")
-                async with session.get(streamer_url) as r:
-                    stream_info = await r.json()
-                async with session.get(user_url) as u:
-                    user_info = await u.json()
-                if stream_info['data']:
-                    for game_id in stream_info['data']:
-                        if game_id['game_id'] in game_url:
-                            pass
-                        elif game_id == stream_info['data'][0]:
-                            game_url += game_id['game_id']
-                        else:
-                            game_url += f"&id={game_id['game_id']}"
-                async with session.get(game_url) as g:
-                    game_info = await g.json()
-                await session.close()
-                with open('twitch/user.json', 'w') as f:
-                    json.dump(user_info, f, indent=4)
-                with open('twitch/live_status.json', 'w') as f:
-                    json.dump(stream_info, f, indent=4)
-                with open('twitch/game_info.json', 'w') as f:
-                    json.dump(game_info, f, indent=4)
-            await self._embed()
+            try:
+                with open(f'twitch/streams.json', 'r'):
+                    pass
+            except FileNotFoundError:
+                with open(f'twitch/streams.json', 'w') as f:
+                    f.write('{"streams": []}')
+            finally:
+                with open(f'twitch/streams.json', 'r') as f:
+                    streams = json.load(f)
+            if streams != {"streams"}:
+                for stream in streams['streams']:
+                    if stream == streams['streams'][0]:
+                        streamer_url += stream
+                        user_url += stream
+                    else:
+                        streamer_url += f"&user_login={stream}"
+                        user_url += f"&login={stream}"
+                async with aiohttp.ClientSession(headers=headers) as session:
+                    print("Fetching stream info...")
+                    async with session.get(streamer_url) as r:
+                        stream_info = await r.json()
+                    async with session.get(user_url) as u:
+                        user_info = await u.json()
+                    if stream_info['data']:
+                        for game_id in stream_info['data']:
+                            if game_id['game_id'] in game_url:
+                                pass
+                            elif game_id == stream_info['data'][0]:
+                                game_url += game_id['game_id']
+                            else:
+                                game_url += f"&id={game_id['game_id']}"
+                    async with session.get(game_url) as g:
+                        game_info = await g.json()
+                    await session.close()
+                    with open('twitch/user.json', 'w') as f:
+                        json.dump(user_info, f, indent=4)
+                    with open('twitch/live_status.json', 'w') as f:
+                        json.dump(stream_info, f, indent=4)
+                    with open('twitch/game_info.json', 'w') as f:
+                        json.dump(game_info, f, indent=4)
+                await self._embed()
             await asyncio.sleep(60)
 
     @staticmethod
@@ -153,7 +177,6 @@ class Bot(discord.Client):
                 add_reactions
         """
         msg = message.content.split()
-        await message.delete()
         if len(msg) < 2:
             return
         message.id = msg[1]
@@ -180,7 +203,6 @@ class Bot(discord.Client):
         """
         msg = message.content.split()
         activity = discord.Activity()
-        await message.delete()
         if len(msg) < 3:
             return
         if "title" in msg:
@@ -206,7 +228,7 @@ class Bot(discord.Client):
         with open('twitch/streams.json', 'r') as f:
             streams = json.load(f)
         if msg[1] == "add":
-            streams['streams'].append(msg[2])
+            streams['streams'].append(msg[2].lower())
         elif msg[1] == "remove" and msg[2] in streams['streams']:
             streams['streams'].remove(msg[2])
         elif msg[1] == "list":
@@ -251,7 +273,6 @@ class Bot(discord.Client):
                 roles[role.name] = {'id': role.id, 'position': role.position}
             with open(f'roles.json', 'w') as f:
                 json.dump(roles, f, indent=4)
-            await message.delete()
 
         if message.content.startswith("--embed"):
             await self._embed()
@@ -271,7 +292,6 @@ class Bot(discord.Client):
 
         if message.content.startswith("--kill"):
             """Kills the bot."""
-            await message.delete()
             return await self.close()
 
     @staticmethod
