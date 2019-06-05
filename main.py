@@ -87,7 +87,7 @@ class Bot(discord.Client):
         if not live_status['data']:
             return
         for stream in live_status['data']:
-            if stream['user_name'] not in started_at or stream['user_name'] is not "" or \
+            if stream['user_name'] not in started_at or stream['user_name'] is not "" and \
                     stream['started_at'] != started_at[stream['user_name']]['started_at']:
                 for game in game_info['data']:
                     if stream['game_id'] == game['id']:
