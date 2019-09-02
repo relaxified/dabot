@@ -53,7 +53,7 @@ def get_webhooks():
     return results
 
 
-def del_webhook(webhook_id, webhook_token):
+def delete_webhook(webhook_id, webhook_token):
     conn = psycopg2.connect(**CONNECTION_VARS)
     c = conn.cursor()
     q = (webhook_id, webhook_token,)

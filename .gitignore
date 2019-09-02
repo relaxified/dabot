@@ -2,5 +2,6 @@ twitch/users.json
 twitch/game_info.json
 twitch/live_status.json
 venv/
+.idea/*
 emoji.txt
 roles.json
