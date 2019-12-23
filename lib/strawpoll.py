@@ -4,9 +4,9 @@ import aiohttp
 async def poll(message):
     """Gets information from user and creates a Straw Poll.
     usage:
-        Can include more than one option.
+        Must include at least 2 options.
         Title and Options must be within quotations.
-        --poll "title" "options"
+        --poll "[title]" "[options]"
     permissions:
         read_message_history
         send_messages
@@ -18,6 +18,14 @@ async def poll(message):
         'options': []
     }
     info = message.content.split("\"")
+
+    # Clean the list (info) of empty spaces
+    for space in info:
+        if space == ' ' or space == '':
+            info.remove(space)
+
+    if len(info) < 4:
+        return "You must include a title and at least 2 options.\nex: --poll \"title\" \"option1\" \"option2\""
 
     for msg in info:
         if msg == info[0]:
