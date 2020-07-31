@@ -14,7 +14,8 @@ class Bot(discord.Client):
         self.EMOJI = dict()
         self.activity = discord.Activity(name='pepega', type=3)
         self.bg_task = None
-        twitch.required_files()
+        # TODO Fix Twitch api access
+        # twitch.required_files()
         print(discord.utils.oauth_url(client_id=CLIENT_ID, permissions=discord.Permissions(1580727376)))
         webhook_url = f"https://discordapp.com/api/oauth2/authorize?client_id={CLIENT_ID}" \
                       "&state=00100&redirect_uri=http%3A%2F%2Fgg.relaxified.com%2Factivate%2F" \
@@ -23,15 +24,10 @@ class Bot(discord.Client):
 
     async def on_ready(self):
         print(f"Logged in as: {self.user}")
-        print("Writing emojis to a txt file")
-        with open('emoji.txt', 'w') as r:
-            for i in self.emojis:
-                r.write(str(i)+"\n")
-        print("Putting emojis into a dictionary")
-        for i in self.emojis:
-            self.EMOJI[i.name] = i.id
+        # TODO Fix Twitch api access
+        # print("Starting Twitch listener.")
+        # self.bg_task = self.loop.create_task(twitch.fetch())
         print("Listening for commands...")
-        self.bg_task = self.loop.create_task(twitch.is_live())
 
     async def on_message(self, message):
         now = datetime.datetime.now()
@@ -43,15 +39,15 @@ class Bot(discord.Client):
             user = self.get_user(int(msg[1]))
             await message.channel.send(user.avatar_url)
 
-        if message.author.id not in [49291953782657024, 421387430017368074]:
-            return
-
         if message.content.startswith("--poll"):
             url = await strawpoll.poll(message)
             await message.channel.send(url)
 
+        if message.author.id not in [49291953782657024, 421387430017368074]:
+            return
+
         if message.content.startswith("--streams"):
-            await twitch.streams(message)
+            await twitch.stream(message)
 
         if message.content.startswith("--kill"):
             """Kills the bot."""
