@@ -36,7 +36,24 @@ class Bot(discord.Client):
 
         if message.content.startswith("--avatar"):
             msg = message.content.split()
-            user = self.get_user(int(msg[1]))
+
+            # Checks if a user is mentioned before checking the message content for a user id
+            if message.mentions:
+                user = message.mentions[0]
+            else:
+                # if a user isn't mentioned, tries to retrieve a user from id provided, if valid
+                try:
+                    user = self.get_user(int(msg[1]))
+                except ValueError:
+                    return await message.channel.send("You must provide a user id or @user")
+
+            # Checks if user is None, if true, searches Discord for user id provided
+            if user is None:
+                try:
+                    user = await self.fetch_user(int(msg[1]))
+                except discord.errors.NotFound:
+                    return await message.channel.send("User not found.")
+
             await message.channel.send(user.avatar_url)
 
         if message.content.startswith("--poll"):
