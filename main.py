@@ -12,7 +12,7 @@ class Bot(discord.Client):
     def __init__(self):
         super().__init__()
         self.EMOJI = dict()
-        self.activity = discord.Activity(name='pepega', type=3)
+        self.activity = discord.Activity(name='pepega', type=5)
         self.bg_task = None
         # TODO Fix Twitch api access
         # twitch.required_files()
@@ -32,10 +32,54 @@ class Bot(discord.Client):
     async def on_message(self, message):
         now = datetime.datetime.now()
         timestamp = datetime.datetime.time(now)
-        print(f"{timestamp}\nGuild: {message.guild} - Channel: {message.channel}\n{message.author}: {message.content}")
+        print(f"[{timestamp} Server: {message.guild} / Channel: {message.channel}]\n{message.author}: {message.content}")
+
+        if message.author.id == self.user.id:
+            return
+
+        if message.content.startswith("--help"):
+            """Send a list of commands.
+            usage:
+                --help <optional: command>
+            permissions:
+                read_message_history
+                send_messages
+            """
+            msg = message.content.split()
+            content = discord.Embed(color=16776960)
+            if len(msg) < 2:
+                content.title = "Commands"
+                content.add_field(name="--help <command>", value="Show command usage.", inline=False)
+                content.add_field(name="--avatar", value="Retrieve a users avatar.", inline=False)
+                content.add_field(name="--poll", value="Creates a StrawPoll.", inline=False)
+                return await message.channel.send(embed=content)
+            elif msg[1] == "avatar":
+                content.title = "--avatar"
+                content.description = "Retrieve a users avatar."
+                content.add_field(name="Usage:", value="--avatar <user> or <userid>")
+                return await message.channel.send(embed=content)
+            elif msg[1] == "poll":
+                content.title = "--poll"
+                content.description = "Creates a StrawPoll."
+                content.add_field(name="Usage:", value="--poll <question> <choice1> <choice2>\n"
+                                                       "Question and choices must be within quotations.\n"
+                                                       "Must have at least 2 choices.")
+                return await message.channel.send(embed=content)
+            else:
+                return await message.channel.send("Something went wrong!")
 
         if message.content.startswith("--avatar"):
+            """Retrieve a users avatar from Discord servers.
+            usage:
+                --avatar [id]
+            permissions:
+                read_message_history
+                send_messages
+            """
             msg = message.content.split()
+
+            if len(msg) < 2:
+                return await message.channel.send("You must provide a user id or @user")
 
             # Checks if a user is mentioned before checking the message content for a user id
             if message.mentions:
@@ -72,6 +116,6 @@ class Bot(discord.Client):
 
 
 if __name__ == "__main__":
-    TOKEN = os.environ["DiscordToken"]
+    TOKEN = os.environ["CLIENT_TOKEN"]
     start = Bot()
     start.run(TOKEN)
