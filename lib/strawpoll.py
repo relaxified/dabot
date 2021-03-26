@@ -2,12 +2,13 @@ import aiohttp
 
 
 async def poll(message):
-    """Gets information from user and creates a Straw Poll.
-    usage:
+    """
+    Gets information from user and creates a Straw Poll.
+    Usage:
         Must include at least 2 options.
         Title and Options must be within quotations.
         --poll "[title]" "[options]"
-    permissions:
+    Permissions:
         read_message_history
         send_messages
     """

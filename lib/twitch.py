@@ -1,10 +1,16 @@
 import aiohttp
 import asyncio
 import json
+import logging
 import os
 import random
 
-from . import database
+from lib import database
+
+TWITCH_ID = os.environ['TWITCH_ID']
+TWITCH_BEARER = os.environ['TWITCH_BEARER']
+
+logger = logging.getLogger('__main__')
 
 
 def required_files():
@@ -25,7 +31,7 @@ def required_files():
 async def fetch():
     """Retrieves stream info from https://api.twitch.tv/
      and saves the information to file in json format."""
-    headers = {'Client-ID': os.environ['twitch'], 'Authorization: Bearer': os.environ['twitch_oauth']}
+    headers = {'Authorization': f'Bearer {TWITCH_BEARER}', 'Client-ID': TWITCH_ID}
     while True:
         api_endpoint = 'https://api.twitch.tv/helix/'
         streamer_url = api_endpoint + "streams?user_login="
@@ -48,7 +54,7 @@ async def fetch():
 
             # fetches stream data from Twitch
             async with aiohttp.ClientSession(headers=headers) as session:
-                print("Fetching stream info...")
+                logger.info('Fetching stream info')
                 async with session.get(streamer_url) as r:
                     stream_info = await r.json()
                 async with session.get(user_url) as u:
@@ -84,7 +90,7 @@ async def fetch():
 async def live_message():
     webhooks = database.get_webhooks()
     headers = {'Content-Type': 'application/json'}
-    api_endpoint = "https://discordapp.com/api/webhooks/"
+    api_endpoint = "https://discord.com/api/v8"
     box_art = "https://static-cdn.jtvnw.net/ttv-static/404_boxart-188x250.jpg"
     game_name = "?"
     icon_url = ""
@@ -156,7 +162,7 @@ async def live_message():
             embeds['embeds'].append(embed)
             async with aiohttp.ClientSession(headers=headers) as session:
                 for hook in webhooks:
-                    url = f"{api_endpoint}{hook[0]}/{hook[1]}"
+                    url = f"{api_endpoint}/webhooks/{hook[0]}/{hook[1]}"
                     async with session.post(url, json=embeds) as resp:
                         response = await resp.text()
                         try:
@@ -183,3 +189,8 @@ async def stream(message):
         await message.channel.send(stream_list['streams'])
     with open('twitch/streams.json', 'w') as f:
         json.dump(stream_list, f, indent=4)
+
+
+if __name__ == '__main__':
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(fetch())
