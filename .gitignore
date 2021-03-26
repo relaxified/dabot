@@ -1,7 +1,7 @@
-twitch/users.json
-twitch/game_info.json
-twitch/live_status.json
-venv/
-.idea/*
+/twitch/users.json
+/twitch/game_info.json
+/twitch/live_status.json
+/venv/
+/.idea/*
 emoji.txt
-roles.json
+logs.log
