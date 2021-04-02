@@ -5,8 +5,8 @@ import os
 
 from lib import strawpoll, twitch, xivapi
 
-CLIENT_ID = os.environ['CLIENT_ID']
-CLIENT_SECRET = os.environ['CLIENT_SECRET']
+DISCORD_ID = os.environ['DISCORD_ID']
+CLIENT_SECRET = os.environ['DISCORD_SECRET']
 
 # Log file name
 logging.basicConfig(filename=f'logs.log')
@@ -40,10 +40,10 @@ class Bot(discord.Client):
         self.activity = discord.Activity(name='pepega', type=5)
         self.bg_task = None
         twitch.required_files()
-        webhook_url = f"https://discordapp.com/api/oauth2/authorize?client_id={CLIENT_ID}" \
+        webhook_url = f"https://discord.com/api/oauth2/authorize?client_id={DISCORD_ID}" \
                       "&state=00100&redirect_uri=http%3A%2F%2Fgg.relaxified.com%2Factivate%2F" \
                       "&response_type=code&scope=webhook.incoming"
-        logger.debug(discord.utils.oauth_url(client_id=CLIENT_ID, permissions=discord.Permissions(1580727376)))
+        logger.debug(discord.utils.oauth_url(client_id=DISCORD_ID, permissions=discord.Permissions(1580727376)))
         logger.debug(webhook_url)
 
     async def on_ready(self):
@@ -216,10 +216,11 @@ class Bot(discord.Client):
 
         if message.content.startswith("--kill"):
             """Kills the bot."""
+            logger.info("Shutting down...")
             await self.close()
 
 
 if __name__ == "__main__":
-    TOKEN = os.environ["CLIENT_TOKEN"]
+    TOKEN = os.environ['DISCORD_TOKEN']
     start = Bot()
     start.run(TOKEN)

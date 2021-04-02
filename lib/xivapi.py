@@ -1,11 +1,12 @@
 import asyncio
 import logging
+import os
 
 import aiohttp
 import pyxivapi
 from pyxivapi.models import Filter, Sort
 
-API_KEY = "0242c177a95446a18365e64e84154f4816f5359a0b8b4e24858d8feca43405c5"
+API_KEY = os.environ['XIVAPI_KEY']
 
 
 async def fetch_item(name):

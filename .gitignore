@@ -1,6 +1,7 @@
-/twitch/users.json
+/twitch/user.json
 /twitch/game_info.json
 /twitch/live_status.json
+/twitch/started_at.json
 /venv/
 /.idea/*
 emoji.txt

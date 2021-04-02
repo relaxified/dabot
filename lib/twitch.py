@@ -34,16 +34,16 @@ async def fetch():
     headers = {'Authorization': f'Bearer {TWITCH_BEARER}', 'Client-ID': TWITCH_ID}
     while True:
         api_endpoint = 'https://api.twitch.tv/helix/'
-        streamer_url = api_endpoint + "streams?user_login="
-        user_url = api_endpoint + "users?login="
-        game_url = api_endpoint + "games?id="
+        streamer_url = f'{api_endpoint}streams?user_login='
+        user_url = f'{api_endpoint}users?login='
+        game_url = f'{api_endpoint}games?id='
 
         # open streams file and saves info to variable
         with open(f'twitch/streams.json', 'r') as f:
             streams = json.load(f)
 
         # creates url for fetching data with
-        if streams != {"streams"}:
+        if streams != {'streams'}:
             for streamer in streams['streams']:
                 if streamer == streams['streams'][0]:
                     streamer_url += streamer
@@ -74,15 +74,11 @@ async def fetch():
                 await session.close()
 
                 # saves all data retrieved
-                with open('twitch/user.json', 'w') as f:
-                    json.dump(user_info, f, indent=4)
-                with open('twitch/live_status.json', 'w') as f:
-                    json.dump(stream_info, f, indent=4)
-                with open('twitch/game_info.json', 'w') as f:
-                    json.dump(game_info, f, indent=4)
-                # print(user_info, stream_info, game_info)
-                # with open('twitch/test_dump.json', 'w') as test:
-                #     json.dump(stuff, test, indent=4)
+                with open('twitch/user.json', 'w') as user, open('twitch/live_status.json', 'w') as live,\
+                        open('twitch/game_info.json', 'w') as game:
+                    json.dump(user_info, user, indent=4)
+                    json.dump(stream_info, live, indent=4)
+                    json.dump(game_info, game, indent=4)
             await live_message()
         await asyncio.sleep(60)
 
@@ -94,16 +90,14 @@ async def live_message():
     box_art = "https://static-cdn.jtvnw.net/ttv-static/404_boxart-188x250.jpg"
     game_name = "?"
     icon_url = ""
-    with open(f'twitch/live_status.json', 'r') as k:
+    with open(f'twitch/live_status.json', 'r') as k, open(f'twitch/user.json', 'r') as u,\
+            open(f'twitch/game_info.json', 'r') as g, open(f'twitch/started_at.json', 'r') as s:
         live_status = json.load(k)
-    with open(f'twitch/user.json', 'r') as u:
         user_info = json.load(u)
-    with open(f'twitch/game_info.json', 'r') as g:
         game_info = json.load(g)
-    with open(f'twitch/started_at.json', 'r') as s:
         started_at = json.load(s)
 
-    # if no streamer is live delete all saved old stream information
+    # if no streamer is live delete all saved stream information
     if not live_status['data']:
         for old_stream in started_at['data']:
             started_at['data'].remove(old_stream)
@@ -112,13 +106,8 @@ async def live_message():
         return
 
     for streamer in live_status['data']:
-
-        # TODO: Fix Twitch embedding to prevent frequent multi-posting
-        # print(streamer)
-        # print(started_at['data'])
-        # print(streamer['id'] in started_at['data'])
-
-        if streamer not in started_at['data']:
+        # TODO: Fix Twitch embedding to prevent frequent posting
+        if not any(d.get('user_id', None) == streamer['user_id'] for d in started_at['data']):
             started_at['data'].append(streamer)
             with open(f'twitch/started_at.json', 'w') as s:
                 json.dump(started_at, s, indent=4)
@@ -129,7 +118,7 @@ async def live_message():
             for user in user_info['data']:
                 if streamer['user_id'] == user['id']:
                     icon_url = user['profile_image_url']
-            image = streamer['thumbnail_url'].replace('{width}x{height}', '1920x1080')
+            image_url = streamer['thumbnail_url'].replace('{width}x{height}', '1920x1080')
             embeds = {'embeds': []}
             embed = {
                 "color": 6570405,
@@ -156,7 +145,7 @@ async def live_message():
                     "url": box_art
                 },
                 "image": {
-                    "url": f"{image}?t={random.randint(0, 999999999)}"
+                    "url": f"{image_url}?t={random.randint(0, 999999999)}"
                 }
             }
             embeds['embeds'].append(embed)
