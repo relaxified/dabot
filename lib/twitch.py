@@ -76,9 +76,9 @@ async def fetch():
                 # saves all data retrieved
                 with open('twitch/user.json', 'w') as user, open('twitch/live_status.json', 'w') as live,\
                         open('twitch/game_info.json', 'w') as game:
-                    json.dump(user_info, user, indent=4)
-                    json.dump(stream_info, live, indent=4)
-                    json.dump(game_info, game, indent=4)
+                    json.dump(user_info, user)
+                    json.dump(stream_info, live)
+                    json.dump(game_info, game)
             await live_message()
         await asyncio.sleep(60)
 
@@ -99,18 +99,27 @@ async def live_message():
 
     # if no streamer is live delete all saved stream information
     if not live_status['data']:
-        for old_stream in started_at['data']:
-            started_at['data'].remove(old_stream)
-        with open(f'twitch/started_at.json', 'w') as s:
-            json.dump(started_at, s, indent=4)
+        if started_at['data']:
+            for old_stream in started_at['data']:
+                started_at['data'].remove(old_stream)
+            with open(f'twitch/started_at.json', 'w') as s:
+                json.dump(started_at, s)
         return
 
     for streamer in live_status['data']:
-        # TODO: Fix Twitch embedding to prevent frequent posting
-        if not any(d.get('user_id', None) == streamer['user_id'] for d in started_at['data']):
-            started_at['data'].append(streamer)
+        # Checks if stream was posted and does so if not.
+        if not any(d.get('user_id', None) == streamer['user_id'] for d in started_at['data'])\
+                and not any(d.get('started_at', None) == streamer['started_at'] for d in started_at['data']):
+            # Checks if streamer info is already saved and updates or saves data.
+            if any(d.get('user_id', None) == streamer['user_id'] for d in started_at['data']):
+                u = next((item for item in started_at['data'] if item['user_id'] == streamer['user_id']), None)
+                u.update(streamer)
+            else:
+                started_at['data'].append(streamer)
+            # Saves stream data to file.
             with open(f'twitch/started_at.json', 'w') as s:
-                json.dump(started_at, s, indent=4)
+                json.dump(started_at, s)
+
             for game in game_info['data']:
                 if streamer['game_id'] == game['id']:
                     box_art = game['box_art_url'].replace("{width}x{height}", "188x250")
@@ -120,6 +129,8 @@ async def live_message():
                     icon_url = user['profile_image_url']
             image_url = streamer['thumbnail_url'].replace('{width}x{height}', '1920x1080')
             embeds = {'embeds': []}
+
+            # Embed structure
             embed = {
                 "color": 6570405,
                 "author": {
@@ -149,6 +160,8 @@ async def live_message():
                 }
             }
             embeds['embeds'].append(embed)
+
+            # Send an embedded message to webhooks
             async with aiohttp.ClientSession(headers=headers) as session:
                 for hook in webhooks:
                     url = f"{api_endpoint}/webhooks/{hook[0]}/{hook[1]}"
@@ -167,17 +180,30 @@ async def stream(message):
     msg = message.content.split()
     with open('twitch/streams.json', 'r') as f:
         stream_list = json.load(f)
-    print(len(msg))
-    if len(msg) == 1:
-        return await message.channel.send("Usage: --streams [add/remove/list] (add/remove args)")
-    if msg[1] == "add":
-        stream_list['streams'].append(msg[2].lower())
-    elif msg[1] == "remove" and msg[2] in stream_list['streams']:
-        stream_list['streams'].remove(msg[2])
-    elif msg[1] == "list":
-        await message.channel.send(stream_list['streams'])
-    with open('twitch/streams.json', 'w') as f:
-        json.dump(stream_list, f, indent=4)
+
+    def _update():
+        with open('twitch/streams.json', 'w') as f:
+            json.dump(stream_list, f)
+    if len(msg) > 1 and msg[1] in ['add', 'remove', 'list']:
+        if msg[1] == "add":
+            if len(msg) != 3:
+                return await message.channel.send("You need to provide a channel.")
+            else:
+                stream_list['streams'].append(msg[2].lower())
+                _update()
+        elif msg[1] == "remove":
+            if len(msg) != 3:
+                return await message.channel.send("You need to provide a channel.")
+            else:
+                if msg[2] in stream_list['streams']:
+                    stream_list['streams'].remove(msg[2])
+                    _update()
+                else:
+                    return await message.channel.send(f'Couldn\'t find {msg[2]}.')
+        elif msg[1] == "list":
+            return await message.channel.send(", ".join(stream_list['streams']))
+    else:
+        return await message.channel.send("Usage: --streams [add/remove/list]")
 
 
 if __name__ == '__main__':

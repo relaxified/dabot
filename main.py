@@ -30,8 +30,6 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 msgLogger.addHandler(ch)
 
-twitchActive = False
-
 
 class Bot(discord.Client):
     def __init__(self):
@@ -48,10 +46,9 @@ class Bot(discord.Client):
 
     async def on_ready(self):
         logger.info(f'Logged in as: {self.user}')
-        if twitchActive:
-            logger.info('Starting Twitch listener')
-            self.bg_task = self.loop.create_task(twitch.fetch())
-            logger.info('Twitch listener started')
+        logger.info('Starting Twitch listener')
+        self.bg_task = self.loop.create_task(twitch.fetch())
+        logger.info('Twitch listener started')
         logger.info('Listening for commands...')
 
     async def on_message(self, message):
